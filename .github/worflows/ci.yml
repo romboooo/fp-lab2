@@ -2,19 +2,20 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, main ]
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v4
     
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 9.0.x
 
@@ -24,10 +25,8 @@ jobs:
     - name: Build
       run: dotnet build --no-restore -warnaserror
       
-    - name: Test
-      run: dotnet test tests/Tests.fsproj --verbosity normal
+    - name: Run tests
+      run: dotnet test tests/Tests.fsproj --verbosity normal --logger "console;verbosity=detailed"
       
-    - name: Run main program (smoke test)
-      run: |
-        cd tests
-        dotnet run --project ../lab2.fsproj -- --help || true
+    - name: Smoke test
+      run: dotnet run --project lab2.fsproj -- --test
