@@ -23,11 +23,12 @@ type Command =
 
 let parseCommand (input: string) =
     let parts = input.Trim().Split(' ') |> Array.filter (fun s -> s <> "")
+
     match parts with
-    | [| "add"; key; value |] -> 
+    | [| "add"; key; value |] ->
         match System.Int32.TryParse(value) with
         | (true, num) -> Add(key, num)
-        | _ -> 
+        | _ ->
             printfn "Error: Value must be a number"
             Help
     | [| "remove"; key |] -> Remove(key)
@@ -42,16 +43,16 @@ let parseCommand (input: string) =
     | [| "foldright" |] -> FoldRight
     | [| "check" |] -> Check
     | [| "clear" |] -> Clear
-    | [| "init" |] -> Init 50
-    | [| "init"; size |] -> 
+    | [| "init" |] -> Init 100
+    | [| "init"; size |] ->
         match System.Int32.TryParse(size) with
         | (true, num) when num > 0 -> Init num
-        | _ -> 
+        | _ ->
             printfn "Error: Size must be a positive number"
             Help
     | [| "help" |] -> Help
     | [| "exit" |] -> Exit
-    | _ -> 
+    | _ ->
         printfn "Unknown command. Type 'help' for available commands."
         Help
 
@@ -69,50 +70,77 @@ let rec processCommand dict command =
         match RBDict.tryFind key dict with
         | Some value -> printfn "Key '%s' has value: %d" key value
         | None -> printfn "Key '%s' not found" key
+
         dict
     | Count ->
         printfn "Dictionary contains %d elements" (RBDict.count dict)
         dict
     | List ->
         let elements = RBDict.toList dict
+
         if List.isEmpty elements then
             printfn "Dictionary is empty"
         else
-            elements 
+            printfn "First 10 elements:"
+
+            elements
+            |> List.truncate 10
             |> List.iter (fun (k, v) -> printfn "  %s -> %d" k v)
+
+            if List.length elements > 10 then
+                printfn "  ... and %d more" (List.length elements - 10)
+
         dict
     | MinKey ->
         match RBDict.minKey dict with
-        | Some (k, v) -> printfn "Minimum by key: %s -> %d" k v
+        | Some(k, v) -> printfn "Minimum by key: %s -> %d" k v
         | None -> printfn "Dictionary is empty"
+
         dict
     | MaxKey ->
         match RBDict.maxKey dict with
-        | Some (k, v) -> printfn "Maximum by key: %s -> %d" k v
+        | Some(k, v) -> printfn "Maximum by key: %s -> %d" k v
         | None -> printfn "Dictionary is empty"
+
         dict
     | MinValue ->
         match RBDict.minValue dict with
-        | Some (k, v) -> printfn "Minimum by value: %s -> %d" k v
+        | Some(k, v) -> printfn "Minimum by value: %s -> %d" k v
         | None -> printfn "Dictionary is empty"
+
         dict
     | MaxValue ->
         match RBDict.maxValue dict with
-        | Some (k, v) -> printfn "Maximum by value: %s -> %d" k v
+        | Some(k, v) -> printfn "Maximum by value: %s -> %d" k v
         | None -> printfn "Dictionary is empty"
+
         dict
     | FoldLeft ->
         let keyConcat = RBDict.fold (fun acc k _ -> acc + k + " ") "" dict
         let valueSum = RBDict.fold (fun acc _ v -> acc + v) 0 dict
         printfn "Left fold results:"
-        printfn "  Key concatenation (first 100 chars): %s" (if keyConcat.Length > 100 then keyConcat.Substring(0, 100) + "..." else keyConcat)
+
+        printfn
+            "  Key concatenation (first 100 chars): %s"
+            (if keyConcat.Length > 100 then
+                 keyConcat.Substring(0, 100) + "..."
+             else
+                 keyConcat)
+
         printfn "  Value sum: %d" valueSum
         dict
     | FoldRight ->
         let keyConcat = RBDict.foldBack (fun k _ acc -> k + " " + acc) dict ""
         let valueSum = RBDict.foldBack (fun _ v acc -> acc + v) dict 0
         printfn "Right fold results:"
-        printfn "  Key concatenation (first 100 chars): %s" (if keyConcat.Length > 100 then keyConcat.Substring(0, 100) + "..." else keyConcat)
+
+        printfn
+            "  Key concatenation (first 100 chars): %s"
+            (if keyConcat.Length > 100 then
+                 keyConcat.Substring(0, 100) + "..."
+             else
+                 keyConcat)
+
         printfn "  Value sum: %d" valueSum
         dict
     | Check ->
@@ -122,8 +150,7 @@ let rec processCommand dict command =
     | Clear ->
         printfn "Cleared dictionary"
         RBDict.empty
-    | Init size ->
-        Initializer.initializeWithSize size
+    | Init size -> Initializer.initializeWithSize size
     | Help ->
         printfn "Available commands:"
         printfn "  add <key> <number>  - Add key-value pair"
@@ -150,22 +177,30 @@ let rec processCommand dict command =
 let rec mainLoop dict =
     printf "rbdict> "
     let input = Console.ReadLine()
-    
+
     if String.IsNullOrWhiteSpace(input) then
         mainLoop dict
     else
         let command = parseCommand input
+
         match command with
-        | Exit -> ()
+        | Exit -> 0 // Возвращаем код выхода
         | _ ->
             let newDict = processCommand dict command
             mainLoop newDict
 
 [<EntryPoint>]
 let main argv =
-    printfn "Type 'help' for available commands"
-    
-    let initialDict = Initializer.defaultInitialize()
-    
-    mainLoop initialDict
-    0
+    if argv.Length > 0 && (argv[0] = "--test" || argv[0] = "--help") then
+        printfn "RB-Dict Console Interface"
+        printfn "This is a smoke test - program compiled successfully!"
+        printfn "Run without arguments for interactive mode."
+        0
+    else
+        printfn "=== RB-Dict Console Interface ==="
+        printfn "Type 'help' for available commands"
+        printfn "Type 'init' to initialize with 100 random elements"
+
+        let initialDict = Initializer.defaultInitialize ()
+
+        mainLoop initialDict

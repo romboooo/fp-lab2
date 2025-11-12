@@ -5,7 +5,7 @@
     <TargetFramework>net9.0</TargetFramework>
   </PropertyGroup>
 
-   <ItemGroup>
+  <ItemGroup>
     <Compile Include="rbdict/Types.fs" />
     <Compile Include="rbdict/Core.fs" />
     <Compile Include="rbdict/RBDict.fs" />

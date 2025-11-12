@@ -6,7 +6,7 @@ module RBDict =
 
     let empty = empty
     let isEmpty = isEmpty
-    let tryFind = tryFind  
+    let tryFind = tryFind
     let containsKey = containsKey
     let add = add
     let remove = remove
