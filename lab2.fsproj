@@ -6,6 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="rbdict/Types.fs" />
+    <Compile Include="rbdict/Core.fs" />
+    <Compile Include="rbdict/RBDict.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
