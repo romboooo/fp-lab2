@@ -9,11 +9,15 @@ type Command =
     | Find of string
     | Count
     | List
-    | Tree
-    | Min
-    | Max
+    | MinKey
+    | MaxKey
+    | MinValue
+    | MaxValue
+    | FoldLeft
+    | FoldRight
     | Check
     | Clear
+    | Init of int
     | Help
     | Exit
 
@@ -30,11 +34,21 @@ let parseCommand (input: string) =
     | [| "find"; key |] -> Find(key)
     | [| "count" |] -> Count
     | [| "list" |] -> List
-    | [| "tree" |] -> Tree
-    | [| "min" |] -> Min
-    | [| "max" |] -> Max
+    | [| "minkey" |] -> MinKey
+    | [| "maxkey" |] -> MaxKey
+    | [| "minvalue" |] -> MinValue
+    | [| "maxvalue" |] -> MaxValue
+    | [| "foldleft" |] -> FoldLeft
+    | [| "foldright" |] -> FoldRight
     | [| "check" |] -> Check
     | [| "clear" |] -> Clear
+    | [| "init" |] -> Init 50
+    | [| "init"; size |] -> 
+        match System.Int32.TryParse(size) with
+        | (true, num) when num > 0 -> Init num
+        | _ -> 
+            printfn "Error: Size must be a positive number"
+            Help
     | [| "help" |] -> Help
     | [| "exit" |] -> Exit
     | _ -> 
@@ -64,21 +78,42 @@ let rec processCommand dict command =
         if List.isEmpty elements then
             printfn "Dictionary is empty"
         else
-            printfn "Dictionary elements:"
-            elements |> List.iter (fun (k, v) -> printfn "  %s -> %d" k v)
+            elements 
+            |> List.iter (fun (k, v) -> printfn "  %s -> %d" k v)
         dict
-    | Tree ->
-        RBDict.printTree dict
-        dict
-    | Min ->
-        match RBDict.minElement dict with
-        | Some (k, v) -> printfn "Minimum element: %s -> %d" k v
+    | MinKey ->
+        match RBDict.minKey dict with
+        | Some (k, v) -> printfn "Minimum by key: %s -> %d" k v
         | None -> printfn "Dictionary is empty"
         dict
-    | Max ->
-        match RBDict.maxElement dict with
-        | Some (k, v) -> printfn "Maximum element: %s -> %d" k v
+    | MaxKey ->
+        match RBDict.maxKey dict with
+        | Some (k, v) -> printfn "Maximum by key: %s -> %d" k v
         | None -> printfn "Dictionary is empty"
+        dict
+    | MinValue ->
+        match RBDict.minValue dict with
+        | Some (k, v) -> printfn "Minimum by value: %s -> %d" k v
+        | None -> printfn "Dictionary is empty"
+        dict
+    | MaxValue ->
+        match RBDict.maxValue dict with
+        | Some (k, v) -> printfn "Maximum by value: %s -> %d" k v
+        | None -> printfn "Dictionary is empty"
+        dict
+    | FoldLeft ->
+        let keyConcat = RBDict.fold (fun acc k _ -> acc + k + " ") "" dict
+        let valueSum = RBDict.fold (fun acc _ v -> acc + v) 0 dict
+        printfn "Left fold results:"
+        printfn "  Key concatenation (first 100 chars): %s" (if keyConcat.Length > 100 then keyConcat.Substring(0, 100) + "..." else keyConcat)
+        printfn "  Value sum: %d" valueSum
+        dict
+    | FoldRight ->
+        let keyConcat = RBDict.foldBack (fun k _ acc -> k + " " + acc) dict ""
+        let valueSum = RBDict.foldBack (fun _ v acc -> acc + v) dict 0
+        printfn "Right fold results:"
+        printfn "  Key concatenation (first 100 chars): %s" (if keyConcat.Length > 100 then keyConcat.Substring(0, 100) + "..." else keyConcat)
+        printfn "  Value sum: %d" valueSum
         dict
     | Check ->
         let isValid = RBDict.checkTreeProperties dict
@@ -87,18 +122,24 @@ let rec processCommand dict command =
     | Clear ->
         printfn "Cleared dictionary"
         RBDict.empty
+    | Init size ->
+        Initializer.initializeWithSize size
     | Help ->
         printfn "Available commands:"
-        printfn "  add <key> <number>  - Add key-value pair (value must be number)"
+        printfn "  add <key> <number>  - Add key-value pair"
         printfn "  remove <key>        - Remove key"
         printfn "  find <key>          - Find value by key"
         printfn "  count               - Count elements"
-        printfn "  list                - List all elements"
-        printfn "  tree                - Show tree structure"
-        printfn "  min                 - Show minimum element"
-        printfn "  max                 - Show maximum element"
+        printfn "  list                - List all elements (first 10)"
+        printfn "  minkey              - Show element with minimum key"
+        printfn "  maxkey              - Show element with maximum key"
+        printfn "  minvalue            - Show element with minimum value"
+        printfn "  maxvalue            - Show element with maximum value"
+        printfn "  foldleft            - Left fold (key concat + value sum)"
+        printfn "  foldright           - Right fold (key concat + value sum)"
         printfn "  check               - Check tree properties"
         printfn "  clear               - Clear dictionary"
+        printfn "  init [size]         - Initialize with random data (default: 100)"
         printfn "  help                - Show this help"
         printfn "  exit                - Exit program"
         dict
@@ -124,19 +165,7 @@ let rec mainLoop dict =
 let main argv =
     printfn "Type 'help' for available commands"
     
-    let initialDict = 
-        RBDict.empty
-        |> RBDict.add "m" 50
-        |> RBDict.add "d" 30
-        |> RBDict.add "s" 70
-        |> RBDict.add "a" 10
-        |> RBDict.add "g" 35
-        |> RBDict.add "p" 60
-        |> RBDict.add "z" 80
-    
-    printfn "Initial tree with 7 elements (should show red nodes):"
-    // RBDict.printTree initialDict
-    printfn ""
+    let initialDict = Initializer.defaultInitialize()
     
     mainLoop initialDict
     0

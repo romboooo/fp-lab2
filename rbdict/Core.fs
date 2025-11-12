@@ -63,6 +63,17 @@ module Core =
     let fold folder state dict = 
         inOrderFold folder state dict.Tree
 
+    let rec private inOrderFoldBack folder tree state =
+        match tree with
+        | Leaf -> state
+        | Node(_, node, left, right) ->
+            let stateRight = inOrderFoldBack folder right state
+            let stateCurrent = folder node.Key node.Value stateRight
+            inOrderFoldBack folder left stateCurrent
+
+    let foldBack folder dict state =
+        inOrderFoldBack folder dict.Tree state
+
     let map mapping dict = 
         let folder acc k v = add k (mapping k v) acc
         fold folder empty dict
@@ -122,7 +133,7 @@ module Core =
         let list2 = toList dict2 |> List.sortBy fst
         list1 = list2
 
-    let minElement dict =
+    let minKey dict =
         let rec findMin tree =
             match tree with
             | Leaf -> None
@@ -130,7 +141,7 @@ module Core =
             | Node(_, _, left, _) -> findMin left
         findMin dict.Tree
 
-    let maxElement dict =
+    let maxKey dict =
         let rec findMax tree =
             match tree with
             | Leaf -> None
@@ -138,17 +149,19 @@ module Core =
             | Node(_, _, _, right) -> findMax right
         findMax dict.Tree
 
-    let toSeq dict =
-        let rec inOrder tree =
-            seq {
-                match tree with
-                | Leaf -> ()
-                | Node(_, node, left, right) ->
-                    yield! inOrder left
-                    yield (node.Key, node.Value)
-                    yield! inOrder right
-            }
-        inOrder dict.Tree
+    let minValue dict =
+        let elements = toList dict
+        if List.isEmpty elements then
+            None
+        else
+            elements |> List.minBy snd |> Some
+
+    let maxValue dict =
+        let elements = toList dict
+        if List.isEmpty elements then
+            None
+        else
+            elements |> List.maxBy snd |> Some
 
     let printTree dict =
         let rec printTree' depth tree =
@@ -184,4 +197,3 @@ module Core =
         
         let result, _ = check dict.Tree
         result
-    
