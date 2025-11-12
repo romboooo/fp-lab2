@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 9.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --no-restore -warnaserror
+      
+    - name: Test
+      run: dotnet test tests/Tests.fsproj --verbosity normal
+      
+    - name: Run main program (smoke test)
+      run: |
+        cd tests
+        dotnet run --project ../lab2.fsproj -- --help || true
