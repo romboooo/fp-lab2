@@ -115,7 +115,7 @@ module UnitTests =
 
         match RBDict.minValue dict with
         | Some(k, v) -> Assert.Equal(1, v)
-        | None -> Assert.True(false, "minValue should return Some")
+        | None -> Assert.True(false, "minValue should return Some ")
 
     [<Fact>]
     let ``maxValue should return maximum value`` () =
