@@ -102,32 +102,107 @@ module Core =
     let combine (dict1: RBDict<'Key, 'Value>) (dict2: RBDict<'Key, 'Value>) =
         fold (fun acc k v -> add k v acc) dict1 dict2
 
+
+
+    let private isRed tree =
+        match tree with
+        | Node(Red, _, _, _) -> true
+        | _ -> false
+
+    let private makeRed tree =
+        match tree with
+        | Node(_, node, left, right) -> Node(Red, node, left, right)
+        | Leaf -> Leaf
+
+    let private makeBlack tree =
+        match tree with
+        | Node(_, node, left, right) -> Node(Black, node, left, right)
+        | Leaf -> Leaf
+
+    let rec private balanceAfterRemove (tree: RBTree<'Key, 'Value>) =
+        match tree with
+        | Node(Black, node, Node(Red, lNode, lLeft, lRight), right) ->
+            Node(Black, node, Node(Black, lNode, lLeft, lRight), right)
+        | Node(Black, node, left, Node(Red, rNode, rLeft, rRight)) ->
+            Node(Black, node, left, Node(Black, rNode, rLeft, rRight))
+        | Node(Black,
+               node,
+               Node(Black, lNode, Node(Red, llNode, llLeft, llRight), lRight),
+               Node(Black, rNode, rLeft, rRight)) ->
+            Node(
+                Black,
+                lNode,
+                Node(Black, llNode, llLeft, llRight),
+                Node(Black, node, lRight, Node(Black, rNode, rLeft, rRight))
+            )
+        | Node(Black,
+               node,
+               Node(Black, lNode, lLeft, Node(Red, lrNode, lrLeft, lrRight)),
+               Node(Black, rNode, rLeft, rRight)) ->
+            Node(
+                Black,
+                lrNode,
+                Node(Black, lNode, lLeft, lrLeft),
+                Node(Black, node, lrRight, Node(Black, rNode, rLeft, rRight))
+            )
+        | Node(Black,
+               node,
+               Node(Black, lNode, lLeft, lRight),
+               Node(Black, rNode, Node(Red, rlNode, rlLeft, rlRight), rRight)) ->
+            Node(
+                Black,
+                rlNode,
+                Node(Black, node, Node(Black, lNode, lLeft, lRight), rlLeft),
+                Node(Black, rNode, rlRight, rRight)
+            )
+        | Node(Black,
+               node,
+               Node(Black, lNode, lLeft, lRight),
+               Node(Black, rNode, rLeft, Node(Red, rrNode, rrLeft, rrRight))) ->
+            Node(
+                Black,
+                rNode,
+                Node(Black, node, Node(Black, lNode, lLeft, lRight), rLeft),
+                Node(Black, rrNode, rrLeft, rrRight)
+            )
+        | Node(Black, node, Node(Black, lNode, lLeft, lRight), Node(Black, rNode, rLeft, rRight)) ->
+            Node(Red, node, Node(Black, lNode, lLeft, lRight), Node(Black, rNode, rLeft, rRight))
+        | tree -> tree
+
     let rec private removeMin (tree: RBTree<'Key, 'Value>) =
         match tree with
         | Leaf -> Leaf, None
         | Node(color, node, Leaf, right) -> right, Some node
         | Node(color, node, left, right) ->
             let newLeft, minNode = removeMin left
-            balance (Node(color, node, newLeft, right)), minNode
+            balanceAfterRemove (Node(color, node, newLeft, right)), minNode
 
     let rec private removeTree (key: 'Key) (tree: RBTree<'Key, 'Value>) =
         match tree with
         | Leaf -> Leaf
         | Node(color, node, left, right) ->
             if key < node.Key then
-                balance (Node(color, node, removeTree key left, right))
+                let newLeft = removeTree key left
+                balanceAfterRemove (Node(color, node, newLeft, right))
             elif key > node.Key then
-                balance (Node(color, node, left, removeTree key right))
+                let newRight = removeTree key right
+                balanceAfterRemove (Node(color, node, left, newRight))
             else
                 match left, right with
-                | Leaf, Leaf -> Leaf
-                | Leaf, right -> right
-                | left, Leaf -> left
+                | Leaf, Leaf -> if color = Red then Leaf else balanceAfterRemove Leaf
+                | Leaf, right -> if color = Black then makeBlack right else right
+                | left, Leaf -> if color = Black then makeBlack left else left
                 | left, right ->
                     let newRight, minNode = removeMin right
 
                     match minNode with
-                    | Some minNode -> balance (Node(color, minNode, left, newRight))
+                    | Some minNode ->
+                        let newTree = Node(color, minNode, left, newRight)
+
+                        if color = Black then
+                            balanceAfterRemove newTree
+                        else
+                            newTree
                     | None -> left
 
     let remove (key: 'Key) (dict: RBDict<'Key, 'Value>) =
@@ -177,12 +252,12 @@ module Core =
             elements |> List.maxBy snd |> Some
 
     let checkTreeProperties (dict: RBDict<'Key, 'Value>) =
-        let rec check tree =
+        let rec checkBlackHeight tree =
             match tree with
             | Leaf -> true, 1
             | Node(color, _, left, right) ->
-                let leftOK, leftBlackHeight = check left
-                let rightOK, rightBlackHeight = check right
+                let leftOK, leftBlackHeight = checkBlackHeight left
+                let rightOK, rightBlackHeight = checkBlackHeight right
 
                 let blackHeight =
                     if color = Black then
@@ -191,14 +266,23 @@ module Core =
                         leftBlackHeight
 
                 let heightsEqual = leftBlackHeight = rightBlackHeight
+                leftOK && rightOK && heightsEqual, blackHeight
 
-                let redProperty =
-                    match color, left, right with
-                    | Red, Node(Red, _, _, _), _ -> false
-                    | Red, _, Node(Red, _, _, _) -> false
-                    | _ -> true
+        let rec checkRedProperty tree =
+            match tree with
+            | Leaf -> true
+            | Node(Red, _, Node(Red, _, _, _), _) -> false
+            | Node(Red, _, _, Node(Red, _, _, _)) -> false
+            | Node(_, _, left, right) -> checkRedProperty left && checkRedProperty right
 
-                leftOK && rightOK && heightsEqual && redProperty, blackHeight
+        let rec checkRootIsBlack tree =
+            match tree with
+            | Leaf -> true
+            | Node(Black, _, _, _) -> true
+            | _ -> false
 
-        let result, _ = check dict.Tree
-        result
+        let blackHeightOK, _ = checkBlackHeight dict.Tree
+        let redPropertyOK = checkRedProperty dict.Tree
+        let rootIsBlack = checkRootIsBlack dict.Tree
+
+        blackHeightOK && redPropertyOK && rootIsBlack

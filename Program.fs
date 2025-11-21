@@ -192,14 +192,9 @@ let rec mainLoop dict =
 [<EntryPoint>]
 let main argv =
     if argv.Length > 0 && (argv[0] = "--test" || argv[0] = "--help") then
-        printfn "RB-Dict Console Interface"
-        printfn "This is a smoke test - program compiled successfully!"
-        printfn "Run without arguments for interactive mode."
         0
     else
-        printfn "=== RB-Dict Console Interface ==="
         printfn "Type 'help' for available commands"
-        printfn "Type 'init' to initialize with 100 random elements"
 
         let initialDict = Initializer.defaultInitialize ()
 
