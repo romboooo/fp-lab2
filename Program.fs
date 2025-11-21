@@ -24,6 +24,7 @@ type Command =
 let parseCommand (input: string) =
     let parts = input.Trim().Split(' ') |> Array.filter (fun s -> s <> "")
 
+
     match parts with
     | [| "add"; key; value |] ->
         match System.Int32.TryParse(value) with
