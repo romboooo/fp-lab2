@@ -130,7 +130,7 @@ let rec processCommand dict command =
         printfn "  Value sum: %d" valueSum
         dict
     | FoldRight ->
-        let keyConcat = RBDict.foldBack (fun k _ acc -> k + " " + acc) dict ""
+        let keyConcat = RBDict.foldBack (fun k _ acc -> acc + k + " ") dict ""
         let valueSum = RBDict.foldBack (fun _ v acc -> acc + v) dict 0
         printfn "Right fold results:"
 

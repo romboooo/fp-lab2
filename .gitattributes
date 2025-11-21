@@ -1,0 +1,3 @@
+*.fs linguist-language=F#
+*.fsx linguist-language=F#
+*.fsi linguist-language=F#

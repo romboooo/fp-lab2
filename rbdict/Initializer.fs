@@ -5,13 +5,13 @@ module Initializer =
 
     let private random = Random()
 
-    let generateRandomDict count =
+    let generateRandomDict (keyGenerator: int -> 'Key) (valueGenerator: int -> 'Value) count =
         let rec generate dict remaining =
             if remaining <= 0 then
                 dict
             else
-                let key = sprintf "key%d" (random.Next(1000, 9999))
-                let value = random.Next(1, 1000)
+                let key = keyGenerator (random.Next(1000, 999999999))
+                let value = valueGenerator (random.Next(1, 100000000))
 
                 if RBDict.containsKey key dict then
                     generate dict remaining
@@ -20,23 +20,30 @@ module Initializer =
 
         generate RBDict.empty count
 
-    let generateSequentialDict count =
+    let generateSequentialDict (keyGenerator: int -> 'Key) (valueGenerator: int -> 'Value) count =
         let rec generate dict i =
             if i >= count then
                 dict
             else
-                let key = sprintf "key%04d" i
-                let value = i * 10
+                let key = keyGenerator i
+                let value = valueGenerator (i * 10)
                 generate (RBDict.add key value dict) (i + 1)
 
         generate RBDict.empty 0
 
-    let defaultInitialize () = generateRandomDict 50
+    // Специализированные инициализаторы для string-int словарей
+    let generateRandomStringIntDict count =
+        generateRandomDict (fun i -> sprintf "key%d" i) (fun i -> i) count
+
+    let generateSequentialStringIntDict count =
+        generateSequentialDict (fun i -> sprintf "key%04d" i) (fun i -> i * 10) count
+
+    let defaultInitialize () = generateRandomStringIntDict 50
 
     let initializeWithSize size =
         printfn "done"
-        generateRandomDict size
+        generateRandomStringIntDict size
 
     let initializeSequential size =
         printfn "done"
-        generateSequentialDict size
+        generateSequentialStringIntDict size

@@ -5,6 +5,7 @@ module Types =
         | Red
         | Black
 
+    [<StructuralEquality; StructuralComparison>]
     type TreeNode<'Key, 'Value> when 'Key: comparison = { Key: 'Key; Value: 'Value }
 
     type RBTree<'Key, 'Value> when 'Key: comparison =
