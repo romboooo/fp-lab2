@@ -98,12 +98,7 @@ module Core =
 
     let count (dict: RBDict<'Key, 'Value>) =
         fold (fun count _ _ -> count + 1) 0 dict
-
-    let combine (dict1: RBDict<'Key, 'Value>) (dict2: RBDict<'Key, 'Value>) =
-        fold (fun acc k v -> add k v acc) dict1 dict2
-
-
-
+        
     let private isRed tree =
         match tree with
         | Node(Red, _, _, _) -> true
@@ -286,3 +281,27 @@ module Core =
         let rootIsBlack = checkRootIsBlack dict.Tree
 
         blackHeightOK && redPropertyOK && rootIsBlack
+
+    let rec private unionTrees (tree1: RBTree<'Key, 'Value>) (tree2: RBTree<'Key, 'Value>) =
+        match tree1, tree2 with
+        | Leaf, _ -> tree2
+        | _, Leaf -> tree1
+        | Node(color1, node1, left1, right1), Node(color2, node2, left2, right2) ->
+            let insertNode tree node =
+                insertEx node tree
+                
+            let rec insertAll tree target =
+                match tree with
+                | Leaf -> target
+                | Node(_, node, left, right) ->
+                    let targetWithNode = insertEx node target
+                    let targetWithLeft = insertAll left targetWithNode
+                    insertAll right targetWithLeft
+            
+            insertAll tree2 tree1
+
+    let union (dict1: RBDict<'Key, 'Value>) (dict2: RBDict<'Key, 'Value>) =
+        let newTree = unionTrees dict1.Tree dict2.Tree
+        match newTree with
+        | Node(_, node, left, right) -> { Tree = Node(Black, node, left, right) }
+        | Leaf -> { Tree = Leaf }

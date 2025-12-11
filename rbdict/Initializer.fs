@@ -12,12 +12,10 @@ module Initializer =
             else
                 let key = keyGenerator (random.Next(1000, 999999999))
                 let value = valueGenerator (random.Next(1, 100000000))
-
                 if RBDict.containsKey key dict then
                     generate dict remaining
                 else
                     generate (RBDict.add key value dict) (remaining - 1)
-
         generate RBDict.empty count
 
     let generateSequentialDict (keyGenerator: int -> 'Key) (valueGenerator: int -> 'Value) count =
@@ -28,10 +26,7 @@ module Initializer =
                 let key = keyGenerator i
                 let value = valueGenerator (i * 10)
                 generate (RBDict.add key value dict) (i + 1)
-
         generate RBDict.empty 0
-
-    // Специализированные инициализаторы для string-int словарей
     let generateRandomStringIntDict count =
         generateRandomDict (fun i -> sprintf "key%d" i) (fun i -> i) count
 
