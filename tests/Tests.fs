@@ -138,15 +138,6 @@ module UnitTests =
         Assert.Equal(6, sum)
 
     [<Fact>]
-    let ``combine should merge dictionaries`` () =
-        let dict1 = RBDict.empty |> RBDict.add "a" 1
-        let dict2 = RBDict.empty |> RBDict.add "b" 2
-        let combined = RBDict.combine dict1 dict2
-        Assert.True(RBDict.containsKey "a" combined)
-        Assert.True(RBDict.containsKey "b" combined)
-        Assert.Equal(2, RBDict.count combined)
-
-    [<Fact>]
     let ``equals should return true for equal dictionaries`` () =
         let dict1 = RBDict.empty |> RBDict.add "a" 1 |> RBDict.add "b" 2
         let dict2 = RBDict.empty |> RBDict.add "a" 1 |> RBDict.add "b" 2
@@ -295,3 +286,73 @@ module ConsistencyTests =
             allConsistent <- allConsistent && consistent
 
         allConsistent
+
+module MonoidPropertyTests =
+
+    [<Property(MaxTest = 50)>]
+    let ``Left identity: union empty dict = dict`` (keys: Set<string>) =
+        let dict = 
+            keys 
+            |> Set.fold (fun dict key -> 
+                let value = System.Random().Next()
+                RBDict.add key value dict) 
+                RBDict.empty
+        
+        let result = RBDict.union RBDict.empty dict
+        
+        let expectedPairs = RBDict.toList dict |> Set.ofList
+        let actualPairs = RBDict.toList result |> Set.ofList
+        
+        actualPairs = expectedPairs
+
+    [<Property(MaxTest = 50)>]
+    let ``Right identity: union dict empty = dict`` (keys: Set<string>) =
+        let dict = 
+            keys 
+            |> Set.fold (fun dict key -> 
+                let value = System.Random().Next()
+                RBDict.add key value dict) 
+                RBDict.empty
+        
+        let result = RBDict.union dict RBDict.empty
+        
+        let expectedPairs = RBDict.toList dict |> Set.ofList
+        let actualPairs = RBDict.toList result |> Set.ofList
+        
+        actualPairs = expectedPairs
+
+    [<Property(MaxTest = 20)>]
+    let ``Associativity: (dict1 union dict2) union dict3 = dict1 union (dict2 union dict3)``
+        (keys1: Set<string>, keys2: Set<string>, keys3: Set<string>) =
+        
+        let random = System.Random()
+        
+        let dict1 = 
+            keys1 
+            |> Set.fold (fun dict key -> 
+                RBDict.add key (random.Next()) dict) 
+                RBDict.empty
+                
+        let dict2 = 
+            keys2 
+            |> Set.fold (fun dict key -> 
+                RBDict.add key (random.Next()) dict) 
+                RBDict.empty
+                
+        let dict3 = 
+            keys3 
+            |> Set.fold (fun dict key -> 
+                RBDict.add key (random.Next()) dict) 
+                RBDict.empty
+
+        let leftAssoc = 
+            RBDict.union (RBDict.union dict1 dict2) dict3 
+            |> RBDict.toList 
+            |> Set.ofList
+
+        let rightAssoc = 
+            RBDict.union dict1 (RBDict.union dict2 dict3) 
+            |> RBDict.toList 
+            |> Set.ofList
+
+        leftAssoc = rightAssoc
